@@ -1,0 +1,314 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}TaskSphere{% endblock %}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/tasksphere_icon_128.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/tasksphere_icon_256.png') }}">
+    <meta name="theme-color" content="#4169e1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .brand-title {
+            color: #4169e1;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .brand-subtitle {
+            color: #6c757d;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .form-control {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .btn-login {
+            background-color: #15192a;
+            color: white;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 1rem;
+            border: none;
+        }
+        .btn-login:hover {
+            background-color: #1a1f35;
+            color: white;
+        }
+        .create-account {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #6c757d;
+        }
+        .create-account a {
+            color: #6c757d;
+            text-decoration: none;
+        }
+        .create-account a:hover {
+            color: #4169e1;
+        }
+        .navbar {
+            margin-bottom: 1rem;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #15192a;
+            font-size: 1.3rem;
+        }
+        .nav-link {
+            color: #15192a;
+            font-size: 1.1rem;
+        }
+        .nav-link:hover {
+            color: #4169e1;
+        }
+        .nav-item.active .nav-link {
+            color: #4169e1;
+            font-weight: bold;
+        }
+        .navbar-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        /* Notifications Badge */
+        .badge-danger {
+            background-color: #dc3545;
+            color: white;
+            position: absolute;
+            top: 0px;
+            right: 2px;
+            font-size: 0.75rem;
+            padding: 0.25em 0.45em;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            font-weight: 600;
+        }
+        .nav-item {
+            position: relative;
+        }
+        .dropdown-menu {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .dropdown-item {
+            white-space: normal;
+        }
+        /* Notifications Styles */
+        .nav-item.dropdown .nav-link {
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .nav-item.dropdown .fa-bell {
+            font-size: 1.5rem;
+            color: #6c757d;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-item.dropdown .nav-link:hover .fa-bell {
+            color: #4169e1;
+        }
+        
+        .dropdown-menu {
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 300px;
+            padding: 0;
+            margin-top: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .dropdown-header {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #15192a;
+            font-size: 0.9rem;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        
+        .dropdown-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f1f1;
+            white-space: normal;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: #15192a;
+        }
+        
+        .dropdown-item.no-notifications {
+            color: #6c757d;
+            text-align: center;
+            padding: 1.5rem;
+            font-style: italic;
+        }
+        
+        /* Scrollbar styling for the dropdown */
+        .dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .notification-badge {
+            transition: opacity 0.3s ease-out;
+        }
+
+        .notification-badge.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='icons/tasksphere_icon_128.png') }}" 
+                 alt="TaskSphere" 
+                 class="navbar-icon">
+            TaskSphere
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('projects') }}">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('search') }}">Search</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                </li>
+                {% endif %}
+
+                <!-- Notifications Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link" href="#" id="notificationsDropdown" role="button" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        {% if notifications and notifications|length > 0 %}
+                        <span class="badge badge-danger notification-badge">{{ notifications|length }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="notificationsDropdown">
+                        <div class="dropdown-header">
+                            <i class="fas fa-bell mr-2"></i>Notifications
+                        </div>
+                        {% if notifications and notifications|length > 0 %}
+                            {% for notification in notifications %}
+                                <a class="dropdown-item" href="#">
+                                    <div class="notification-content">
+                                        {{ notification }}
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="dropdown-item no-notifications">
+                                <i class="fas fa-check-circle mr-2"></i>No new notifications
+                            </div>
+                        {% endif %}
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+                .then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

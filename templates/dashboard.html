@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Welcome, {{ current_user.username }}</h1>
+        
+        <!-- Tasks Section -->
+        <h2 class="dashboard-subtitle">Your Upcoming Tasks</h2>
+        <div class="tasks-list">
+            {% for task in tasks %}
+            <div class="task-item priority-{{ task.priority.lower() }}">
+                <div class="priority-indicator"></div>
+                <h3>{{ task.title }}</h3>
+                <p>Due: {{ task.due_date.strftime('%Y-%m-%d') }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Meetings Section -->
+        <h2 class="dashboard-subtitle mt-5">Your Upcoming Meetings</h2>
+        <div class="meetings-list">
+            {% for meeting in meetings %}
+            <div class="meeting-item">
+                <h3>{{ meeting.title }}</h3>
+                <p><strong>Date & Time:</strong> {{ meeting.date_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Location:</strong> {{ meeting.location }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Action Buttons -->
+        <a href="{{ url_for('add_task') }}" class="btn btn-primary-custom mt-3">Add New Task</a>
+        <a href="{{ url_for('tasks') }}" class="btn btn-primary-custom mt-3">View All Tasks</a>
+        <a href="{{ url_for('add_meeting') }}" class="btn btn-primary-custom mt-3">Add New Meeting</a>
+        <a href="{{ url_for('meetings') }}" class="btn btn-primary-custom mt-3">View All Meetings</a>
+    </div>
+
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #15192a;
+            margin-bottom: 1rem;
+        }
+        .dashboard-subtitle {
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+        }
+        .tasks-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .task-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            padding-left: 2rem;
+        }
+        .task-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        .task-item h3 {
+            color: #15192a;
+            margin-bottom: 0.5rem;
+        }
+        .task-item p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        /* Meetings Section Styles */
+        .meetings-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .meeting-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .meeting-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        .meeting-item h3 {
+            color: #15192a;
+            margin-bottom: 0.5rem;
+        }
+        .meeting-item p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .priority-indicator {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .priority-high .priority-indicator {
+            background-color: #dc3545;
+        }
+
+        .priority-medium .priority-indicator {
+            background-color: #ffc107;
+        }
+
+        .priority-low .priority-indicator {
+            background-color: #28a745;
+        }
+
+        .priority-high {
+            border-left: 4px solid #dc3545;
+        }
+
+        .priority-medium {
+            border-left: 4px solid #ffc107;
+        }
+
+        .priority-low {
+            border-left: 4px solid #28a745;
+        }
+
+        /* Styles for meeting reminders */
+        .meeting-reminders {
+            margin-top: 2rem;
+        }
+        .meeting-reminder-item {
+            background: #fffbe6;
+            padding: 1rem;
+            border-left: 6px solid #ffc107;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+        .meeting-reminder-item.urgent {
+            border-color: #dc3545;
+        }
+        .meeting-reminder-item h4 {
+            margin-bottom: 0.5rem;
+            color: #15192a;
+        }
+        .meeting-reminder-item p {
+            margin: 0;
+            color: #6c757d;
+        }
+
+        .meeting-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #ffc107;
+        color: #212529;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Use the serialized upcoming meetings data
+    var upcomingMeetings = {{ upcoming_meetings_serialized | tojson }};
+    
+    function scheduleNotifications(meetings) {
+        meetings.forEach(function(meeting) {
+            // Parse date_time string into a Date object
+            const meetingTime = new Date(meeting.date_time);
+            const now = new Date();
+
+            const timeDiff = meetingTime - now;
+
+            if (timeDiff <= 0) {
+                // Meeting has already started or passed
+                return;
+            } else if (timeDiff <= (60 * 60 * 1000)) {
+                // Less than 1 hour remaining, display notification immediately
+                displayNotification(meeting);
+            } else {
+                // Schedule notification for 1 hour before the meeting starts
+                const notificationTime = timeDiff - (60 * 60 * 1000);
+                setTimeout(function() {
+                    displayNotification(meeting);
+                }, notificationTime);
+            }
+        });
+    }
+
+    function displayNotification(meeting) {
+        // Display notification to the user
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'meeting-notification';
+        notificationDiv.innerHTML = `
+            <strong>Upcoming Meeting:</strong> ${meeting.title} at ${new Date(meeting.date_time).toLocaleString()}
+        `;
+        document.body.appendChild(notificationDiv);
+    }
+
+    // Schedule notifications when the DOM content is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        scheduleNotifications(upcomingMeetings);
+    });
+</script>
+{% endblock %} 

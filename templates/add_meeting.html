@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block title %}Schedule Meeting{% endblock %}
+{% block content %}
+    <div class="add-meeting-container">
+        <h1 class="add-meeting-title">Schedule New Meeting</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Display the conflicting meeting details if present -->
+        {% if conflicting_meeting %}
+            <div class="alert alert-error">
+                <p>Your meeting conflicts with the following meeting:</p>
+                <ul>
+                    <li><strong>Title:</strong> {{ conflicting_meeting.title }}</li>
+                    <li><strong>Date & Time:</strong> {{ conflicting_meeting.date_time.strftime('%Y-%m-%d %H:%M') }}</li>
+                    <li><strong>Duration:</strong> {{ conflicting_meeting.duration }} minutes</li>
+                    <li><strong>Location:</strong> {{ conflicting_meeting.location }}</li>
+                </ul>
+            </div>
+        {% endif %}
+
+        <div class="add-meeting-card">
+            <form action="{{ url_for('add_meeting') }}" method="post" id="addMeetingForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <input type="text" name="title" placeholder="Title" class="form-control" id="title" required value="{{ form_data['title'] if form_data else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="date_time">Date & Time</label>
+                    <div class="datetime-picker-container">
+                        <input type="date" name="meeting_date" class="form-control" id="meeting_date" required value="{{ form_data['meeting_date'] if form_data else '' }}">
+                        <input type="time" name="meeting_time" class="form-control" id="meeting_time" required value="{{ form_data['meeting_time'] if form_data else '' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="location" placeholder="Location" class="form-control" id="location" value="{{ form_data['location'] if form_data else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="duration">Duration (minutes)</label>
+                    <select name="duration" class="form-control" id="duration" required>
+                        <option value="30" {% if form_data and form_data['duration'] == '30' %}selected{% endif %}>30 minutes</option>
+                        <option value="60" {% if form_data and form_data['duration'] == '60' %}selected{% endif %}>1 hour</option>
+                        <option value="90" {% if form_data and form_data['duration'] == '90' %}selected{% endif %}>1.5 hours</option>
+                        <option value="120" {% if form_data and form_data['duration'] == '120' %}selected{% endif %}>2 hours</option>
+                    </select>
+                </div>
+                <input type="submit" value="Schedule Meeting" class="btn btn-primary-custom">
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .add-meeting-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .add-meeting-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #15192a;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .add-meeting-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-primary-custom {
+            background-color: #4169e1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        .btn-primary-custom:hover {
+            background-color: #365fcf;
+        }
+        .datetime-picker-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #15192a;
+            font-weight: 500;
+        }
+
+        input[type="date"],
+        input[type="time"] {
+            height: 50px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: white;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: -0.5rem;
+        }
+
+        .form-group select {
+            height: 50px;  /* Match the height of other inputs */
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: white;
+            width: 100%;
+            appearance: auto;  /* Show default select appearance */
+        }
+
+        /* Ensure consistent styling for all form controls */
+        .form-control {
+            height: 50px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: white;
+            width: 100%;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing calendar...');
+        let currentWeekStart = new Date();
+        currentWeekStart.setHours(0, 0, 0, 0);
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+        
+        // Initialize calendar if department is selected
+        const departmentSelect = document.getElementById('department');
+        if (departmentSelect.value) {
+            console.log('Department selected, updating calendar...');
+            updateCalendar();
+        }
+        
+        // Add change listener
+        departmentSelect.addEventListener('change', function() {
+            console.log('Department changed, updating calendar...');
+            updateCalendar();
+        });
+    });
+
+    // Enhanced date and time validation
+    function isValidDate(dateString) {
+        const date = new Date(dateString);
+        
+        // Check if date is valid and exists
+        if (isNaN(date.getTime())) return false;
+        
+        // Verify that the input date matches the actual date object
+        const parts = dateString.split('-');
+        return parseInt(parts[0]) === date.getFullYear() &&
+               parseInt(parts[1]) - 1 === date.getMonth() &&
+               parseInt(parts[2]) === date.getDate();
+    }
+
+    function isValidDateTime(dateString, timeString) {
+        if (!isValidDate(dateString)) return false;
+        
+        const dateTime = new Date(dateString + 'T' + timeString);
+        return !isNaN(dateTime.getTime());
+    }
+
+    document.getElementById('addMeetingForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const title = document.getElementById('title').value.trim();
+        const meetingDate = document.getElementById('meeting_date').value;
+        const meetingTime = document.getElementById('meeting_time').value;
+        
+        if (!title || !meetingDate || !meetingTime) {
+            alert('Please fill out all required fields.');
+            return;
+        }
+        
+        if (!isValidDateTime(meetingDate, meetingTime)) {
+            alert('Please enter a valid date and time.');
+            return;
+        }
+        
+        const dateTime = new Date(meetingDate + 'T' + meetingTime);
+        const now = new Date();
+        
+        if (dateTime < now) {
+            alert('Please select a future date and time.');
+            return;
+        }
+        
+        // Verify it's not too far in the future
+        const maxDate = new Date();
+        maxDate.setFullYear(maxDate.getFullYear() + 2);
+        if (dateTime > maxDate) {
+            alert('Meeting cannot be scheduled more than 2 years in advance.');
+            return;
+        }
+        
+        this.submit();
+    });
+
+    // Set min date to today and max date to 2 years from now
+    const dateInput = document.getElementById('meeting_date');
+    const timeInput = document.getElementById('meeting_time');
+    const today = new Date().toISOString().split('T')[0];
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 2);
+    
+    dateInput.setAttribute('min', today);
+    dateInput.setAttribute('max', maxDate.toISOString().split('T')[0]);
+    
+    // Add input event listeners for immediate feedback
+    dateInput.addEventListener('input', function(e) {
+        const timeValue = timeInput.value;
+        if (!isValidDate(this.value)) {
+            this.setCustomValidity('Please enter a valid date');
+        } else if (timeValue && !isValidDateTime(this.value, timeValue)) {
+            this.setCustomValidity('Invalid date/time combination');
+        } else {
+            this.setCustomValidity('');
+            // Trigger time input validation
+            timeInput.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    timeInput.addEventListener('input', function(e) {
+        const dateValue = dateInput.value;
+        if (!dateValue) return;
+        
+        if (!this.value) {
+            this.setCustomValidity('Please select a time');
+            return;
+        }
+        
+        const dateTime = new Date(dateValue + 'T' + this.value);
+        const now = new Date();
+        
+        if (dateTime < now) {
+            this.setCustomValidity('Please select a future time');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+</script>
+{% endblock %} 

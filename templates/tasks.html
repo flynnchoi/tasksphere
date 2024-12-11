@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Your Tasks{% endblock %}
+{% block content %}
+    <div class="tasks-container">
+        <h1 class="tasks-title">Your Tasks</h1>
+        <a href="{{ url_for('add_task') }}" class="btn btn-primary-custom mb-3">Add New Task</a>
+        <div class="tasks-list">
+            {% for task in tasks %}
+            <div class="task-item priority-{{ task.priority.lower() }}">
+                <div class="priority-indicator"></div>
+                <h3>{{ task.title }}</h3>
+                <p>{{ task.description }}</p>
+                <p>Due: {{ task.due_date.strftime('%Y-%m-%d') }} | Priority: {{ task.priority }}</p>
+                {% if task.department %}
+                <p>Department: {{ task.department.name }}</p>
+                {% endif %}
+                {% if task.project %}
+                <p>Project: {{ task.project.name }}</p>
+                {% endif %}
+                {% if task.categories %}
+                <div class="task-categories">
+                    {% for category in task.categories %}
+                    <span class="category-tag">{{ category.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <style>
+        .tasks-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .tasks-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #15192a;
+            margin-bottom: 1rem;
+        }
+        .tasks-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .task-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            padding-left: 2rem;
+        }
+        .task-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        .task-item h3 {
+            color: #15192a;
+            margin-bottom: 0.5rem;
+        }
+        .task-item p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        .btn-primary-custom {
+            background-color: #4169e1;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn-primary-custom:hover {
+            background-color: #365fcf;
+            color: white;
+            text-decoration: none;
+        }
+        .task-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .category-tag {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .priority-indicator {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+        .priority-high .priority-indicator {
+            background-color: #dc3545;
+        }
+        .priority-medium .priority-indicator {
+            background-color: #ffc107;
+        }
+        .priority-low .priority-indicator {
+            background-color: #28a745;
+        }
+        .priority-high {
+            border-left: 4px solid #dc3545;
+        }
+        .priority-medium {
+            border-left: 4px solid #ffc107;
+        }
+        .priority-low {
+            border-left: 4px solid #28a745;
+        }
+    </style>
+{% endblock %} 
